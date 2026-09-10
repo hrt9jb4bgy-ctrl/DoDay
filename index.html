@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DoDay v0.1</title>
+<style>
+:root{--green:#168b67;--green2:#dff5eb;--ink:#17302a;--muted:#70827d;--bg:#f6faf8;--card:#fff;--gold:#f2b63f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+.app{max-width:430px;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:82px}
+header{padding:28px 20px 10px}.brand{font-size:28px;font-weight:800}.sub{color:var(--muted);margin-top:4px}
+.screen{display:none;padding:10px 18px}.screen.active{display:block}
+.card{background:var(--card);border-radius:22px;padding:18px;margin:12px 0;box-shadow:0 6px 22px #17302a0d}
+.garden{background:linear-gradient(145deg,#dff5eb,#fdf7dd);overflow:hidden;position:relative}
+.garden h2{margin:0 0 4px}.garden p{margin:0;color:var(--muted)}
+.plant{font-size:72px;text-align:center;padding:10px}.meter{height:9px;background:#e7ecea;border-radius:99px;overflow:hidden}.meter span{display:block;height:100%;background:var(--green);width:35%;border-radius:99px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #eef2f0}.row:last-child{border:0}.check{width:25px;height:25px;border:2px solid #cbd8d3;border-radius:50%;display:grid;place-items:center;flex:none}.done .check{background:var(--green);border-color:var(--green);color:white}.done .task{text-decoration:line-through;color:#9aa8a4}.task{flex:1}.time{font-size:13px;color:var(--muted);width:48px}
+button{border:0;border-radius:15px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}.primary{background:var(--green);color:white}.secondary{background:var(--green2);color:var(--green)}.wide{width:100%}
+textarea,input{width:100%;border:1px solid #dce7e2;border-radius:15px;padding:14px;font:inherit;outline:none;background:white}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,100%);background:#fff;border-top:1px solid #e6eeeb;display:flex;justify-content:space-around;padding:10px 4px calc(10px + env(safe-area-inset-bottom));z-index:5}
+.nav button{background:none;color:#7b8a86;padding:7px 6px;font-size:11px}.nav button.active{color:var(--green)}
+.title{font-size:24px;font-weight:800;margin:8px 0 4px}.muted{color:var(--muted)}.points{font-size:34px;font-weight:800;color:var(--green)}
+.pill{display:inline-block;padding:7px 10px;border-radius:99px;background:#fff1cf;color:#9a6b00;font-weight:700;font-size:13px}
+.chat{background:#f0f7f4;border-radius:18px;padding:14px;margin:10px 0}.ai{background:var(--green2)}
+.reward{display:flex;align-items:center;gap:12px}.reward .emoji{font-size:28px}.reward button{margin-left:auto}
+.small{font-size:13px}.center{text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand">🌱 DoDay</div><div class="sub">Iga päev natuke parem.</div></header>
+
+<section id="day" class="screen active">
+  <div class="card garden">
+    <h2>Sinu aed</h2><p>Level <b id="level">3</b> · <span id="life">320</span> / <span id="next">500</span> elujõudu</p>
+    <div class="plant" id="plant">🌿</div><div class="meter"><span id="lifeBar"></span></div>
+    <p style="margin-top:10px">Tee täna üks väike samm. 🌱</p>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:end"><div><b>Tänane päev</b><div class="muted small">Neljapäev, 10. september</div></div><span class="pill" id="progress">0%</span></div>
+    <div id="tasks"></div>
+  </div>
+  <button class="primary wide" onclick="addTask()">＋ Lisa ülesanne</button>
+  <button class="secondary wide" style="margin-top:8px" onclick="makePlan()">✨ Planeeri mu päev</button>
+</section>
+
+<section id="ai" class="screen">
+  <div class="title">AI Coach</div><div class="muted">Räägi või kirjuta, mida sul täna teha on.</div>
+  <div class="card"><textarea id="aiInput" rows="4" placeholder="Näiteks: töö, pood, trenn ja õhtul tahan lugeda..."></textarea><button class="primary wide" style="margin-top:10px" onclick="makePlan()">Koosta minu päev</button></div>
+  <div id="aiResult"></div>
+</section>
+
+<section id="habits" class="screen">
+  <div class="title">Minu harjumused</div><div class="muted">DoDay otsib korduvaid mustreid, mitte vigu.</div>
+  <div class="card">
+    <div class="row"><span>😴</span><div class="task"><b>Uni</b><div class="muted small">7 / 10</div></div><b>70%</b></div>
+    <div class="row"><span>🏋️</span><div class="task"><b>Trenn</b><div class="muted small">8 / 10</div></div><b>80%</b></div>
+    <div class="row"><span>📱</span><div class="task"><b>Telefon</b><div class="muted small">5 / 10</div></div><b>50%</b></div>
+  </div>
+  <div class="card ai"><b>🧠 AI märkas mustrit</b><p>Viimase 14 päeva jooksul oled trenni kõige sagedamini edasi lükanud pärast kella 18.</p><p>Proovime järgmised 7 päeva trenni enne tööpäeva lõppu?</p><button class="primary" onclick="alert('7 päeva harjumus lisatud!')">Proovime 7 päeva</button></div>
+</section>
+
+<section id="rewards" class="screen">
+  <div class="title">Rewards</div><div class="card center"><div class="muted">Sinu DoPoints</div><div class="points" id="points">1240 ⭐</div><div class="pill">🔥 7 päeva järjest</div></div>
+  <div class="card">
+    <div class="reward"><span class="emoji">☕</span><div><b>Lemmikkohv</b><div class="muted small">200 punkti</div></div><button class="secondary" onclick="redeem(200,'Lemmikkohv')">Võta</button></div>
+    <div class="reward"><span class="emoji">🎬</span><div><b>Film</b><div class="muted small">300 punkti</div></div><button class="secondary" onclick="redeem(300,'Film')">Võta</button></div>
+    <div class="reward"><span class="emoji">🎮</span><div><b>1 h mängimist</b><div class="muted small">250 punkti</div></div><button class="secondary" onclick="redeem(250,'1 h mängimist')">Võta</button></div>
+  </div>
+</section>
+
+<section id="summary" class="screen">
+  <div class="title">Päev tehtud! 🎉</div>
+  <div class="card center"><div class="points" id="summaryProgress">0 / 6</div><div class="muted">ülesannet tehtud</div><p>⭐ <b id="summaryPoints">0</b> DoPoints täna</p></div>
+  <div class="card ai"><b>AI sõnum</b><p>Üks halb päev ei kustuta sinu tehtud tööd. Vaatame, mis homme lihtsamaks teha.</p><button class="primary" onclick="makePlan()">✨ Planeeri homne päev</button></div>
+</section>
+
+<nav class="nav">
+<button class="active" onclick="show('day',this)">🏠<br>Päev</button>
+<button onclick="show('ai',this)">✨<br>AI</button>
+<button onclick="show('habits',this)">🧠<br>Harjumused</button>
+<button onclick="show('rewards',this)">🎁<br>Rewards</button>
+<button onclick="show('summary',this)">🌙<br>Kokkuvõte</button>
+</nav>
+</div>
+
+<script>
+let tasks=[
+ {t:'Hommikusöök',time:'08:00',done:true},{t:'Töö',time:'09:00',done:true},
+ {t:'Lõunasöök',time:'12:30',done:false},{t:'Trenn',time:'17:30',done:false},
+ {t:'Pood',time:'19:00',done:false},{t:'20 min lugemist',time:'21:30',done:false}
+];
+let points=1240,life=320;
+
+function render(){
+ const box=document.getElementById('tasks'); box.innerHTML='';
+ tasks.forEach((x,i)=>{let d=document.createElement('div');d.className='row '+(x.done?'done':'');d.innerHTML=`<div class="check" onclick="toggle(${i})">${x.done?'✓':''}</div><div class="time">${x.time}</div><div class="task">${x.t}</div>`;box.appendChild(d)});
+ let done=tasks.filter(x=>x.done).length,pct=Math.round(done/tasks.length*100);
+ document.getElementById('progress').textContent=pct+'%';document.getElementById('summaryProgress').textContent=done+' / '+tasks.length;document.getElementById('summaryPoints').textContent=done*10;
+ document.getElementById('points').textContent=points+' ⭐';document.getElementById('life').textContent=life;
+ document.getElementById('lifeBar').style.width=Math.min(100,life/500*100)+'%';
+ document.getElementById('plant').textContent=life<100?'🌱':life<500?'🌿':life<2000?'🌳':'🌸';
+ document.getElementById('level').textContent=Math.max(1,Math.floor(life/100)+1);
+}
+function toggle(i){if(tasks[i].done)return;tasks[i].done=true;points+=10;life+=10;render()}
+function addTask(){let t=prompt('Mis ülesanne lisada?');if(t){tasks.push({t,time:'Uus',done:false});render()}}
+function makePlan(){
+ let input=document.getElementById('aiInput').value.trim();
+ if(!input) input='töö, pood, trenn ja õhtul lugemine';
+ document.getElementById('aiResult').innerHTML=`<div class="card ai"><b>✨ DoDay soovitab</b><p>Panin sinu soovid realistlikku järjekorda ja jätsin päeva sisse natuke hingamisruumi.</p><div class="chat"><b>09:00</b> — Töö<br><b>12:30</b> — Lõunasöök<br><b>17:30</b> — Trenn<br><b>19:00</b> — Pood<br><b>21:30</b> — Lugemine</div><button class="primary" onclick="show('day',document.querySelector('.nav button'))">Sobib, lisa mu päeva</button></div>`;
+ document.getElementById('aiInput').value=input;
+}
+function redeem(cost,name){if(points>=cost){points-=cost;render();alert('🎉 Preemia kätte! '+name)}else alert('Sul on vaja veel '+(cost-points)+' punkti.')}
+function show(id,btn){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
+render();
+</script>
+</body></html>
