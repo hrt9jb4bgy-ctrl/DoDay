@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoDay v0.2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7f2;color:#243126}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}
+header{padding:22px 20px 12px;background:#f0f6ea;border-bottom:1px solid #dfe8d9}
+h1{margin:0;font-size:28px} .tag{color:#64705f;margin-top:4px}
+.garden{margin:16px 20px;padding:18px;border-radius:20px;background:#eaf5e4}
+.garden strong{font-size:18px}.bar{height:10px;background:#d6dfd1;border-radius:10px;margin-top:10px;overflow:hidden}.fill{height:100%;width:64%;background:#79a86a}
+main{padding:0 20px 90px}.section{display:none}.section.active{display:block}
+.card{border:1px solid #e2e7df;border-radius:16px;padding:15px;margin:12px 0;background:#fff;box-shadow:0 2px 8px #00000008}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1}
+.task{display:flex;align-items:center;gap:10px}.task input{width:20px;height:20px}
+.time{font-size:12px;color:#74806f}.more{border:0;background:transparent;font-size:20px;cursor:pointer}
+button{border:0;border-radius:12px;padding:10px 14px;background:#6d9b61;color:#fff;cursor:pointer}.secondary{background:#edf2ea;color:#34412f}
+.menu{display:none;margin-top:10px;padding:10px;background:#f6f8f4;border-radius:12px}.menu.open{display:block}.menu button{display:block;width:100%;margin:5px 0;text-align:left}
+input[type=text],input[type=time]{width:100%;padding:11px;border:1px solid #d7ded2;border-radius:10px;margin:6px 0}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;display:flex;background:#fff;border-top:1px solid #ddd;padding:8px}
+nav button{flex:1;background:transparent;color:#5d6958;font-size:12px}.empty{color:#778172}
+h2{margin-top:18px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>DoDay</h1><div class="tag">Iga päev natuke parem.</div></header>
+<div class="garden"><strong>🌱 Sinu aed</strong><div>Level 4 · 320 / 500 elujõudu</div><div class="bar"><div class="fill"></div></div></div>
+<main>
+<section id="day" class="section active">
+<h2>Tänane päev</h2>
+<div id="tasks"></div>
+<div class="card"><button onclick="addTask()">＋ Lisa ülesanne</button> <button class="secondary" onclick="planDay()">Planeeri päev</button></div>
+</section>
+<section id="ai" class="section">
+<h2>AI Coach</h2>
+<div class="card"><p><b>Coach:</b> Mis on täna kõige olulisem?</p><input id="aiInput" type="text" placeholder="Näiteks: mul pole täna trenni jaoks aega"><button onclick="coach()">Saada</button><p id="aiReply" class="empty"></p></div>
+</section>
+<section id="habits" class="section"><h2>Harjumused</h2><div class="card">💧 Joo vett <b>7 päeva</b></div><div class="card">🚶 Liikumine <b>4 päeva</b></div><div class="card">📚 Loe 10 min <b>2 päeva</b></div></section>
+<section id="rewards" class="section"><h2>Rewards</h2><div class="card"><b>⭐ 320 DoPointi</b><p>Järgmine preemia 500 punktiga.</p></div></section>
+<section id="summary" class="section"><h2>Kokkuvõte</h2><div class="card"><b>Tänane edenemine</b><p>2 ülesannet tehtud · 320 elujõudu</p></div></section>
+</main>
+<nav>
+<button onclick="show('day')">Päev</button><button onclick="show('ai')">AI</button><button onclick="show('habits')">Harjumused</button><button onclick="show('rewards')">Rewards</button><button onclick="show('summary')">Kokkuvõte</button>
+</nav>
+</div>
+<script>
+let tasks=[
+{id:1,text:"Hommikune jalutuskäik",time:"08:00"},
+{id:2,text:"Tööpäeva tähtsaim ülesanne",time:"10:00"},
+{id:3,text:"Trenn",time:"18:00"}
+];
+function render(){
+const el=document.getElementById('tasks');el.innerHTML='';
+tasks.forEach(t=>{
+ const card=document.createElement('div');card.className='card';
+ card.innerHTML=`<div class="task"><input type="checkbox" onchange="done(this)"><div class="grow"><b>${esc(t.text)}</b><div class="time">${t.time}</div></div><button class="more" onclick="toggleMenu(${t.id})">•••</button></div>
+ <div id="menu-${t.id}" class="menu">
+ <button onclick="renameTask(${t.id})">✏️ Muuda nime</button>
+ <button onclick="changeTime(${t.id})">🕐 Muuda aega</button>
+ <button onclick="tomorrow(${t.id})">➡️ Tõsta homsesse</button>
+ <button onclick="skip(${t.id})">⏭️ Jäta täna vahele</button></div>`;
+ el.appendChild(card);
+});
+}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function toggleMenu(id){document.querySelectorAll('.menu').forEach(x=>x.classList.remove('open'));document.getElementById('menu-'+id).classList.add('open')}
+function renameTask(id){let t=tasks.find(x=>x.id===id),v=prompt('Uus ülesande nimi:',t.text);if(v&&v.trim()){t.text=v.trim();render()}}
+function changeTime(id){let t=tasks.find(x=>x.id===id),v=prompt('Uus kellaaeg (nt 19:30):',t.time);if(v&&v.trim()){t.time=v.trim();render()}}
+function tomorrow(id){let t=tasks.find(x=>x.id===id);alert('„'+t.text+'” on märgitud homseks.');tasks=tasks.filter(x=>x.id!==id);render()}
+function skip(id){let t=tasks.find(x=>x.id===id);alert('„'+t.text+'” jäeti tänaseks vahele.');tasks=tasks.filter(x=>x.id!==id);render()}
+function done(cb){if(cb.checked){cb.closest('.card').style.opacity='.55'}}
+function addTask(){let text=prompt('Mis ülesande soovid lisada?');if(!text)return;let time=prompt('Kellaaeg (nt 16:00):','12:00');tasks.push({id:Date.now(),text,time:time||'12:00'});render()}
+function planDay(){alert('Päev on planeeritud. Saad nüüd iga ülesande ••• menüüst aega või nime muuta.')}
+function coach(){let v=document.getElementById('aiInput').value.trim();document.getElementById('aiReply').textContent=v?'Soovitus: tõsta vähemolulised tegevused hilisemaks ja jäta tänasesse päeva ainult kõige olulisemad.':'Kirjuta mulle, mis täna muret teeb, ja aitame päeva lihtsamaks teha.'}
+function show(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0)}
+render();
+</script>
+</body>
+</html>
