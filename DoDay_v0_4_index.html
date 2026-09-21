@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DoDay v0.4</title>
+<style>
+*{box-sizing:border-box}
+:root{--green:#5f9f63;--green2:#e8f4e6;--ink:#243126;--muted:#718074;--bg:#f7f8f3;--card:#fff;--line:#e2e8df;--gold:#e8c86a}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+.app{max-width:540px;margin:auto;min-height:100vh;padding-bottom:80px}
+header{padding:24px 20px 14px;background:#f0f7ed;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:28px}.tag{color:#66806a;margin-top:4px}
+section{display:none;padding:0 14px}.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 2px 8px #00000008}
+.garden{background:linear-gradient(145deg,#eef8e9,#f8f3df);border-radius:20px;padding:17px;margin:14px 0}
+.bar{height:10px;background:#dbe4d8;border-radius:99px;overflow:hidden;margin-top:10px}.fill{height:100%;background:#6ea968;border-radius:99px}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1}
+.task{display:flex;align-items:center;gap:10px}.task input{width:20px;height:20px;accent-color:var(--green)}
+.task.done .name{text-decoration:line-through;color:#8b968d}.task.done .time{opacity:.6}
+.name{font-weight:700}.time{font-size:12px;color:var(--muted);margin-top:2px}
+.more{border:0;background:transparent;font-size:22px;color:#778077;cursor:pointer;padding:4px 7px}
+.menu{display:none;margin-top:10px;padding:10px;background:#f5f8f3;border-radius:12px;gap:7px;flex-wrap:wrap}.menu.open{display:flex}
+.menu button,.secondary{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer}
+.primary{border:0;background:var(--green);color:white;border-radius:12px;padding:11px 14px;font-weight:700;cursor:pointer}
+textarea,input[type=text],input[type=time]{width:100%;padding:12px;border:1px solid #d8e0d5;border-radius:12px;font:inherit;background:white}
+textarea{min-height:76px;resize:vertical}
+.actions{display:flex;gap:8px;margin-top:10px}.actions>*{flex:1}
+.coach{background:#edf6e9}
+.message{margin-top:10px;background:white;border-radius:12px;padding:11px;color:#56635a;line-height:1.4}
+h2{font-size:20px;margin:16px 0 8px}.pill{font-size:12px;background:#eef4ec;padding:5px 8px;border-radius:99px;color:#5d765f}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(540px,100%);background:#fff;border-top:1px solid var(--line);display:flex}
+nav button{flex:1;border:0;background:transparent;padding:13px 4px;color:#69756c;font-size:12px;cursor:pointer}nav button.active{color:var(--green);font-weight:700}
+.small{font-size:13px;color:var(--muted)}.empty{text-align:center;padding:18px;color:var(--muted)}
+.reward{display:flex;align-items:center;gap:12px}.emoji{font-size:30px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>DoDay</h1><div class="tag">Iga päev natuke parem.</div></header>
+
+<section id="day" class="active">
+<div class="garden">
+  <strong>🌱 Sinu aed</strong>
+  <div class="small">Level <span id="level">4</span> · <span id="points">320</span> / 500 elujõudu</div>
+  <div class="bar"><div id="gardenFill" class="fill" style="width:64%"></div></div>
+</div>
+<h2>Tänane päev</h2>
+<div id="tasks"></div>
+<div class="actions"><button class="primary" onclick="addTask()">＋ Lisa ülesanne</button><button class="secondary" onclick="planDay()">Planeeri päev</button></div>
+
+<div class="card coach">
+  <strong>🤖 AI Coach</strong>
+  <div class="small">Kirjuta vabalt, mis sinu päevas muutus.</div>
+  <textarea id="coachInput" placeholder="Näiteks: Mul jäi trenn ära ja tööülesanne on tegemata."></textarea>
+  <div class="actions"><button class="primary" onclick="coach()">Kohanda päeva</button><button class="secondary" onclick="coachExample()">Näidis</button></div>
+  <div id="coachMsg" class="message" style="display:none"></div>
+</div>
+</section>
+
+<section id="ai">
+<h2>🤖 AI Coach</h2>
+<div class="card coach">
+  <strong>Räägi mulle oma päevast</strong>
+  <div class="small">Prototüübis töötab Coach sinu sisendi põhjal lokaalselt. Päris AI ühenduse lisame järgmises etapis.</div>
+  <textarea id="aiInput" placeholder="Mul tuli ootamatu koosolek ja õhtul olen väsinud..."></textarea>
+  <button class="primary" style="width:100%;margin-top:10px" onclick="coachFromAI()">Aita mul ümber planeerida</button>
+  <div id="aiMsg" class="message" style="display:none"></div>
+</div>
+</section>
+
+<section id="habits">
+<h2>🌿 Harjumused</h2>
+<div class="card"><strong>Hommikune liikumine</strong><p class="small">3 päeva järjest · 15 min</p><span class="pill">Kasvab</span></div>
+<div class="card"><strong>Ekraaniaeg õhtul</strong><p class="small">Coach soovitab väikest asendust: 10 min rahulikku jalutust.</p><span class="pill">Uus muster</span></div>
+</section>
+
+<section id="rewards">
+<h2>🎁 Rewards</h2>
+<div class="card reward"><div class="emoji">☕</div><div class="grow"><strong>Lemmikkohv</strong><div class="small">100 DoPointi</div></div><button class="secondary" onclick="spend(100)">Lunasta</button></div>
+<div class="card reward"><div class="emoji">🎬</div><div class="grow"><strong>Filmiõhtu</strong><div class="small">250 DoPointi</div></div><button class="secondary" onclick="spend(250)">Lunasta</button></div>
+</section>
+
+<section id="summary">
+<h2>📊 Kokkuvõte</h2>
+<div class="card"><strong>Tänane seis</strong><p id="summaryText" class="small"></p></div>
+</section>
+
+<nav>
+<button class="active" onclick="show('day',this)">Päev</button>
+<button onclick="show('ai',this)">AI</button>
+<button onclick="show('habits',this)">Harjumused</button>
+<button onclick="show('rewards',this)">Rewards</button>
+<button onclick="show('summary',this)">Kokkuvõte</button>
+</nav>
+</div>
+
+<script>
+const KEY="doday_v04_tasks";
+let tasks=JSON.parse(localStorage.getItem(KEY)||"null")||[
+ {id:1,name:"Hommikune jalutuskäik",time:"08:00",done:false,skipped:false},
+ {id:2,name:"Tööpäeva tähtsaim ülesanne",time:"10:00",done:false,skipped:false},
+ {id:3,name:"Trenn",time:"18:00",done:false,skipped:false}
+];
+let points=Number(localStorage.getItem("doday_points")||320);
+
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks));localStorage.setItem("doday_points",points);render();}
+function render(){
+ const box=document.getElementById("tasks"); box.innerHTML="";
+ tasks.filter(t=>!t.skipped).forEach(t=>{
+  const el=document.createElement("div");el.className="card task "+(t.done?"done":"");
+  el.innerHTML=`<input type="checkbox" ${t.done?"checked":""} onchange="toggle(${t.id})">
+   <div class="grow"><div class="name">${esc(t.name)}</div><div class="time">${t.time}</div></div>
+   <button class="more" onclick="toggleMenu(${t.id})">•••</button>
+   <div class="menu" id="m${t.id}">
+    <button onclick="renameTask(${t.id})">✏️ Muuda nime</button>
+    <button onclick="changeTime(${t.id})">🕐 Muuda aega</button>
+    <button onclick="tomorrow(${t.id})">➡️ Tõsta homsesse</button>
+    <button onclick="skip(${t.id})">⏭️ Jäta täna vahele</button>
+   </div>`;
+  box.appendChild(el);
+ });
+ document.getElementById("points").textContent=points;
+ document.getElementById("gardenFill").style.width=Math.min(100,(points%500)/5)+"%";
+ document.getElementById("level").textContent=Math.floor(points/100)+1;
+ const done=tasks.filter(t=>t.done).length;
+ document.getElementById("summaryText").textContent=`Täna on ${done} ülesanne tehtud ${tasks.length} ülesandest. Iga väike samm loeb.`;
+}
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toggle(id){let t=tasks.find(x=>x.id===id);t.done=!t.done;if(t.done)points+=20;else points=Math.max(0,points-20);save()}
+function toggleMenu(id){document.querySelectorAll(".menu").forEach(m=>m.classList.remove("open"));document.getElementById("m"+id).classList.add("open")}
+function renameTask(id){let t=tasks.find(x=>x.id===id);let n=prompt("Uus ülesande nimi:",t.name);if(n&&n.trim()){t.name=n.trim();save()}}
+function changeTime(id){let t=tasks.find(x=>x.id===id);let n=prompt("Uus kellaaeg (nt 17:30):",t.time);if(n&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(n)){t.time=n;save()}else if(n)alert("Palun kasuta vormi HH:MM.")}
+function tomorrow(id){let t=tasks.find(x=>x.id===id);t.skipped=true;coachMessage("Tõstsin ülesande homsesse. Tänane päev jäi selle võrra kergemaks.");save()}
+function skip(id){let t=tasks.find(x=>x.id===id);t.skipped=true;coachMessage("Jätsin selle tänaseks vahele. Üks vahelejäänud päev ei nulli sinu progressi.");save()}
+function addTask(){let name=prompt("Mida soovid täna teha?");if(!name||!name.trim())return;let time=prompt("Mis kell? (nt 16:30)","16:30")||"16:30";tasks.push({id:Date.now(),name:name.trim(),time,done:false,skipped:false});save()}
+function planDay(){tasks.sort((a,b)=>a.time.localeCompare(b.time));coachMessage("Panin tänased ülesanded kellaaja järgi. Kui midagi muutub, kirjuta Coachile ja kohandame päeva.");save()}
+function coachExample(){document.getElementById("coachInput").value="Mul jäi trenn ära ja tööülesanne on tegemata."}
+function coach(){handleCoach(document.getElementById("coachInput").value,"coachMsg")}
+function coachFromAI(){handleCoach(document.getElementById("aiInput").value,"aiMsg")}
+function handleCoach(text,target){
+ text=text.toLowerCase().trim(); if(!text){coachMessage("Kirjuta mulle, mis sinu päevas muutus.",target);return}
+ let msgs=[];
+ if(text.includes("trenn")&&(text.includes("ära")||text.includes("jään"))){
+  const t=tasks.find(x=>x.name.toLowerCase().includes("trenn")&&!x.done&&!x.skipped);if(t){t.skipped=true;msgs.push("Tänane trenn jäi ära.");}
+ }
+ if(text.includes("töö")||text.includes("ülesanne")){
+  const t=tasks.find(x=>x.name.toLowerCase().includes("töö")&&!x.done&&!x.skipped);
+  if(t){t.time="18:30";msgs.push("Tööpäeva tähtsaima ülesande tõstsin 18:30 peale.");}
+ }
+ if(!msgs.length)msgs.push("Sain aru. Selle prototüübi Coach oskab praegu muuta ülesannete aega ja eemaldada tänasest plaanist ülesandeid. Järgmises versioonis ühendame päris AI-ga.");
+ msgs.push("Sa ei pea kõike korraga ära tegema — kohandame päeva realistlikult.");
+ coachMessage(msgs.join(" "),target);save();
+}
+function coachMessage(msg,target="coachMsg"){let el=document.getElementById(target);el.style.display="block";el.textContent=msg}
+function spend(n){if(points<n){alert("Sul ei ole veel piisavalt DoPointi.");return}points-=n;alert("Preemia lunastatud! 🎉");save()}
+function show(id,btn){document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()}
+render();
+</script>
+</body>
+</html>
