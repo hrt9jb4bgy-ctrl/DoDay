@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DoDay v0.3</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7faf5;color:#24352a}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#fff;padding-bottom:90px}
+header{padding:22px 20px 12px;background:#f0f8ea;border-bottom:1px solid #dfe8d9}
+h1{margin:0;font-size:28px}.tag{color:#64705f;margin-top:4px}
+.garden{margin:16px 20px;padding:18px;border-radius:20px;background:#eaf5e4}
+.bar{height:10px;background:#d6dfd1;border-radius:10px;margin-top:10px;overflow:hidden}
+.fill{height:100%;width:64%;background:#6d9b61;border-radius:10px}
+main{padding:0 20px}
+.card{border:1px solid #e2e9df;border-radius:16px;padding:15px;margin:12px 0;background:#fff;box-shadow:0 2px 8px #00000008}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1}
+.task{display:flex;align-items:center;gap:10px;cursor:pointer}
+.task input{width:20px;height:20px}
+.time{font-size:12px;color:#74806f}
+.more{border:0;background:transparent;font-size:22px;cursor:pointer;color:#64705f}
+.menu{display:none;margin-top:10px;padding:10px;background:#f6f8f4;border-radius:12px}
+.menu.open{display:grid;gap:7px}
+.menu button,button{border:0;border-radius:12px;padding:11px 12px;font:inherit;cursor:pointer}
+.menu button{background:#6d9b61;color:#fff}
+.primary{background:#6d9b61;color:#fff}.secondary{background:#edf2ea}
+.ai{background:#f0f7ed;border-radius:16px;padding:14px;margin-top:12px}
+textarea{width:100%;padding:11px;border:1px solid #d7e2d1;border-radius:12px;resize:vertical;font:inherit}
+.ai-actions{display:flex;gap:8px;margin-top:8px}.ai-actions button{flex:1}
+.reply{margin-top:10px;background:#fff;border-radius:12px;padding:12px;display:none}
+.reply.show{display:block}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);background:#fff;border-top:1px solid #e2e8df;display:flex}
+nav button{flex:1;background:transparent;color:#5d6958;padding:12px 5px;font-size:12px}
+nav button.active{color:#6d9b61;font-weight:700}
+.section{display:none}.section.active{display:block}
+h2{font-size:18px;margin:18px 0 8px}
+.small{font-size:13px;color:#778172}
+.points{font-size:34px;font-weight:800;color:#6d9b61;text-align:center;padding:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>DoDay</h1><div class="tag">Iga päev natuke parem.</div></header>
+
+<div class="garden">
+<strong>🌱 Sinu aed</strong><div>Level 4 · <span id="energy">320</span> / 500 elujõudu</div>
+<div class="bar"><div class="fill" id="fill"></div></div>
+</div>
+
+<main>
+<section id="day" class="section active">
+<h2>Tänane päev</h2>
+<div id="tasks"></div>
+<div class="row">
+<button class="primary" onclick="addTask()">＋ Lisa ülesanne</button>
+<button class="secondary" onclick="replan()">Planeeri päev</button>
+</div>
+
+<div class="ai">
+<strong>🤖 AI Coach</strong>
+<div class="small">Ütle, mis sinu päevas muutus.</div>
+<textarea id="coachInput" rows="3" placeholder="Näiteks: Mul jäi trenn ära ja tööülesanne on tegemata."></textarea>
+<div class="ai-actions">
+<button class="primary" onclick="coach()">Kohanda päeva</button>
+<button class="secondary" onclick="quickCoach()">Näidis</button>
+</div>
+<div id="reply" class="reply"></div>
+</div>
+</section>
+
+<section id="habits" class="section">
+<h2>Harjumused</h2>
+<div class="card"><strong>🚶 Hommikune jalutuskäik</strong><div class="small">4 päeva järjest</div></div>
+<div class="card"><strong>💧 Vesi</strong><div class="small">5 päeva järjest</div></div>
+</section>
+
+<section id="rewards" class="section">
+<h2>Rewards</h2><div class="card"><div class="points">120 DoPoint'i</div><div class="small" style="text-align:center">Sinu järgmine preemia on lähedal.</div></div>
+</section>
+
+<section id="summary" class="section">
+<h2>Kokkuvõte</h2>
+<div class="card"><strong>🌱 Tänane elujõud</strong><div class="small">+35, kui tänased olulised tegevused saavad tehtud.</div></div>
+<div class="card"><strong>💡 DoDay mõte</strong><div class="small">Üks halb päev ei kustuta sinu senist tööd.</div></div>
+</section>
+</main>
+
+<nav>
+<button class="active" onclick="show('day',this)">Päev</button>
+<button onclick="show('coach',this)">AI</button>
+<button onclick="show('habits',this)">Harjumused</button>
+<button onclick="show('rewards',this)">Rewards</button>
+<button onclick="show('summary',this)">Kokkuvõte</button>
+</nav>
+</div>
+
+<script>
+let tasks=[
+ {name:"Hommikune jalutuskäik",time:"08:00",done:false},
+ {name:"Tööpäeva tähtsaim ülesanne",time:"10:00",done:false},
+ {name:"Trenn",time:"18:00",done:false}
+];
+
+function render(){
+ const box=document.getElementById("tasks");
+ box.innerHTML="";
+ tasks.forEach((t,i)=>{
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML=`<div class="task">
+   <input type="checkbox" ${t.done?"checked":""} onchange="toggle(${i})">
+   <div class="grow"><strong>${t.name}</strong><div class="time">${t.time}</div></div>
+   <button class="more" onclick="toggleMenu(${i})">•••</button>
+  </div>
+  <div class="menu" id="menu${i}">
+   <button onclick="renameTask(${i})">✏️ Muuda nime</button>
+   <button onclick="changeTime(${i})">🕐 Muuda aega</button>
+   <button onclick="tomorrow(${i})">➡️ Tõsta homsesse</button>
+   <button onclick="skip(${i})">⏭️ Jäta täna vahele</button>
+  </div>`;
+  box.appendChild(card);
+ });
+}
+function toggleMenu(i){document.getElementById("menu"+i).classList.toggle("open")}
+function toggle(i){tasks[i].done=!tasks[i].done;render()}
+function renameTask(i){let x=prompt("Uus ülesande nimi:",tasks[i].name);if(x)tasks[i].name=x;render()}
+function changeTime(i){let x=prompt("Uus kellaaeg:",tasks[i].time);if(x)tasks[i].time=x;render()}
+function tomorrow(i){let x=tasks[i].name;tasks.splice(i,1);reply("Tõstsin „"+x+"“ homsesse. Tänane päev jäi nüüd veidi kergemaks.");render()}
+function skip(i){let x=tasks[i].name;tasks.splice(i,1);reply("Jätsin „"+x+"“ tänasest välja. Üks vahelejäänud tegevus ei riku päeva.");render()}
+function addTask(){let n=prompt("Mida soovid täna teha?");if(!n)return;let t=prompt("Mis kell?","16:00")||"16:00";tasks.push({name:n,time:t,done:false});render()}
+function replan(){
+ tasks.sort((a,b)=>a.time.localeCompare(b.time));
+ reply("Vaadates tänast plaani: ülesanded on järjestatud kellaaegade järgi. Kui midagi muutub, kirjuta mulle allpool ja kohandan päeva.");
+}
+function coach(){
+ const v=document.getElementById("coachInput").value.trim().toLowerCase();
+ if(!v){reply("Kirjuta näiteks: „Mul jäi trenn ära ja tööülesanne on tegemata.“");return}
+ let changed=false;
+ if(v.includes("trenn") && (v.includes("ära")||v.includes("ei"))) {
+   const i=tasks.findIndex(t=>t.name.toLowerCase().includes("trenn"));
+   if(i>=0){tasks.splice(i,1);changed=true}
+ }
+ if(v.includes("homme") && tasks.length){
+   const x=tasks[tasks.length-1]; tasks.splice(tasks.length-1,1); changed=true;
+   reply("Sain aru. Tõstsin „"+x.name+"“ homsesse ja jätsin tänasesse rohkem ruumi.");
+ } else if(changed){
+   const work=tasks.find(t=>t.name.toLowerCase().includes("töö"));
+   if(work) work.time="18:30";
+   reply("Sain aru. Tõstsin päeva ümber: trenn eemaldatud tänasest ja tööülesanne on nüüd kell 18:30. Õhtu jääb rahulikumaks.");
+ } else {
+   reply("Sain aru. Praegu saan sinu sisendi põhjal päeva ümber tõsta. Proovi näiteks: „Mul jäi trenn ära.“");
+ }
+ render();
+}
+function quickCoach(){
+ document.getElementById("coachInput").value="Mul jäi trenn ära ja tööülesanne on tegemata.";
+ coach();
+}
+function reply(t){let r=document.getElementById("reply");r.textContent=t;r.classList.add("show")}
+function show(id,btn){
+ document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+ if(id==="coach"){id="day";document.getElementById("coachInput").focus()}
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");
+}
+render();
+</script>
+</body>
+</html>
